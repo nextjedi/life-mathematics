@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+
 import '../main.dart';
-import '../widgets/calculator_button.dart';
 import '../utils/calculator_logic.dart';
+import '../widgets/calculator_button.dart';
 
 class CalculatorScreen extends StatefulWidget {
   const CalculatorScreen({Key? key}) : super(key: key);

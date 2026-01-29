@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'screens/calculator_screen.dart';
+
 import 'app/theme.dart';
+import 'screens/calculator_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,7 +15,8 @@ void main() async {
 class LifeMathematicsApp extends StatefulWidget {
   final bool isDarkMode;
 
-  const LifeMathematicsApp({Key? key, required this.isDarkMode}) : super(key: key);
+  const LifeMathematicsApp({Key? key, required this.isDarkMode})
+      : super(key: key);
 
   @override
   State<LifeMathematicsApp> createState() => _LifeMathematicsAppState();
@@ -35,7 +37,8 @@ class _LifeMathematicsAppState extends State<LifeMathematicsApp> {
 
   void toggleTheme() async {
     setState(() {
-      _themeMode = _themeMode == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
+      _themeMode =
+          _themeMode == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
     });
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('darkMode', _themeMode == ThemeMode.dark);
