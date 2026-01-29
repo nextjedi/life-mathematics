@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app/theme.dart';
 import 'screens/calculator_screen.dart';
+import 'screens/smart_calculators_screen.dart';
+import 'screens/history_screen.dart';
+import 'screens/settings_screen.dart';
+import 'providers/history_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -46,13 +51,83 @@ class _LifeMathematicsAppState extends State<LifeMathematicsApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Life Mathematics',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: _themeMode,
-      home: const CalculatorScreen(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => HistoryProvider()),
+      ],
+      child: MaterialApp(
+        title: 'Life Mathematics',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: _themeMode,
+        home: const HomePage(),
+      ),
+    );
+  }
+}
+
+class HomePage extends StatefulWidget {
+  const HomePage({Key? key}) : super(key: key);
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  int _selectedIndex = 0;
+
+  static const List<Widget> _screens = [
+    CalculatorScreen(),
+    SmartCalculatorsScreen(),
+    HistoryScreen(),
+  ];
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final appState = LifeMathematicsApp.of(context);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Life Mathematics'),
+        actions: [
+          IconButton(
+            icon: Icon(
+              Theme.of(context).brightness == Brightness.dark
+                  ? Icons.light_mode
+                  : Icons.dark_mode,
+            ),
+            onPressed: () => appState?.toggleTheme(),
+            tooltip: 'Toggle Theme',
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
+      body: _screens[_selectedIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(Icons.calculate),
+            label: 'Calculator',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.smart_toy),
+            label: 'Smart Calc',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.history),
+            label: 'History',
+          ),
+        ],
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+      ),
     );
   }
 }

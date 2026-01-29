@@ -6,6 +6,8 @@ class CalculatorLogic {
   bool _hasDecimal = false;
 
   String get displayValue => _displayValue;
+  String get previousValue => _previousValue;
+  String get operator => _operator;
 
   void inputNumber(String number) {
     if (_shouldResetDisplay) {

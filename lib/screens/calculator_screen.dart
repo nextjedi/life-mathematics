@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
 import '../main.dart';
 import '../utils/calculator_logic.dart';
+import '../utils/database_helper.dart';
 import '../widgets/calculator_button.dart';
+import '../providers/history_provider.dart';
 
 class CalculatorScreen extends StatefulWidget {
   const CalculatorScreen({Key? key}) : super(key: key);
@@ -13,6 +17,32 @@ class CalculatorScreen extends StatefulWidget {
 
 class _CalculatorScreenState extends State<CalculatorScreen> {
   final CalculatorLogic _calculator = CalculatorLogic();
+
+  void _saveCalculation() async {
+    // Only save if we have a complete calculation (previous value + operator + result)
+    if (_calculator.previousValue.isNotEmpty && _calculator.operator.isNotEmpty) {
+      final now = DateTime.now();
+      final name = 'Basic Calc ${DateFormat('MMM dd, HH:mm').format(now)}';
+
+      final history = CalculationHistory(
+        type: 'basic_calculator',
+        name: name,
+        label: 'arithmetic',
+        isPinned: false,
+        timestamp: DateTime.now(),
+        inputs: {
+          'previousValue': _calculator.previousValue,
+          'operator': _calculator.operator,
+          'currentValue': _calculator.displayValue,
+        },
+        results: {
+          'result': _calculator.displayValue,
+        },
+      );
+
+      await Provider.of<HistoryProvider>(context, listen: false).addHistory(history);
+    }
+  }
 
   void _onButtonPressed(String value) {
     setState(() {
@@ -34,6 +64,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
           break;
         case '=':
           _calculator.calculate();
+          _saveCalculation();
           break;
         case '.':
           _calculator.inputDecimal();
@@ -54,28 +85,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final appState = LifeMathematicsApp.of(context);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Calculator',
-          style: TextStyle(fontWeight: FontWeight.w600),
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(
-              Theme.of(context).brightness == Brightness.dark
-                  ? Icons.light_mode
-                  : Icons.dark_mode,
-            ),
-            onPressed: () => appState?.toggleTheme(),
-            tooltip: 'Toggle Theme',
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
-      body: SafeArea(
+    return SafeArea(
         child: Column(
           children: [
             // Display
