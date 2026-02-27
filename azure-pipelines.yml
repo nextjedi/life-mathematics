@@ -77,6 +77,8 @@ stages:
     steps:
     - template: .azure/templates/flutter-install-steps.yml
     - template: .azure/templates/apple-signing-steps.yml
+      parameters:
+        provisioningProfile: 'ios-distribution.mobileprovision'
     - template: .azure/templates/fastlane-install-steps.yml
     - script: bundle exec fastlane beta
       workingDirectory: '$(System.DefaultWorkingDirectory)/ios'
@@ -93,6 +95,8 @@ stages:
     steps:
     - template: .azure/templates/flutter-install-steps.yml
     - template: .azure/templates/apple-signing-steps.yml
+      parameters:
+        provisioningProfile: 'macos-distribution.provisionprofile'
     - template: .azure/templates/fastlane-install-steps.yml
     - script: bundle exec fastlane beta
       workingDirectory: '$(System.DefaultWorkingDirectory)/macos'
@@ -141,6 +145,8 @@ stages:
     steps:
     - template: .azure/templates/flutter-install-steps.yml
     - template: .azure/templates/apple-signing-steps.yml
+      parameters:
+        provisioningProfile: 'ios-distribution.mobileprovision'
     - template: .azure/templates/fastlane-install-steps.yml
     - script: bundle exec fastlane release
       workingDirectory: '$(System.DefaultWorkingDirectory)/ios'
@@ -157,6 +163,8 @@ stages:
     steps:
     - template: .azure/templates/flutter-install-steps.yml
     - template: .azure/templates/apple-signing-steps.yml
+      parameters:
+        provisioningProfile: 'macos-distribution.provisionprofile'
     - template: .azure/templates/fastlane-install-steps.yml
     - script: bundle exec fastlane release
       workingDirectory: '$(System.DefaultWorkingDirectory)/macos'

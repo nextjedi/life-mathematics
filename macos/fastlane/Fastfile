@@ -5,23 +5,51 @@ MACOS_DIR    = File.expand_path("..", __dir__)
 WORKSPACE    = File.join(MACOS_DIR, "Runner.xcworkspace")
 ARCHIVE_PATH = File.join(PROJECT_ROOT, "build", "macos", "Runner.xcarchive")
 EXPORT_DIR   = File.join(PROJECT_ROOT, "build", "macos", "pkg")
+TEAM_ID      = "DLQ4JM3YPQ"
+BUNDLE_ID    = "com.nextjedi.lifemathematics"
+
+def build_export_options(prov_uuid)
+  <<~PLIST
+    <?xml version="1.0" encoding="UTF-8"?>
+    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+    <plist version="1.0">
+    <dict>
+        <key>method</key>
+        <string>app-store-connect</string>
+        <key>teamID</key>
+        <string>#{TEAM_ID}</string>
+        <key>signingStyle</key>
+        <string>manual</string>
+        <key>uploadSymbols</key>
+        <true/>
+        <key>provisioningProfiles</key>
+        <dict>
+            <key>#{BUNDLE_ID}</key>
+            <string>#{prov_uuid}</string>
+        </dict>
+    </dict>
+    </plist>
+  PLIST
+end
 
 platform :mac do
 
   desc "Build and upload to TestFlight"
   lane :beta do
     api_key = app_store_connect_api_key(
-      key_id:      ENV["ASC_KEY_ID"],
-      issuer_id:   ENV["ASC_ISSUER_ID"],
+      key_id:       ENV["ASC_KEY_ID"],
+      issuer_id:    ENV["ASC_ISSUER_ID"],
       key_filepath: ENV["ASC_KEY_PATH"]
     )
 
     build_number = latest_testflight_build_number(
       api_key:              api_key,
-      app_identifier:       "com.nextjedi.lifemathematics",
+      app_identifier:       BUNDLE_ID,
       platform:             "osx",
       initial_build_number: 0
     ) + 1
+
+    prov_uuid = ENV["APPLE_PROV_PROFILE_UUID"]
 
     Dir.chdir(PROJECT_ROOT) do
       sh("flutter", "clean")
@@ -32,31 +60,31 @@ platform :mac do
     sh(
       "xcodebuild", "-workspace", WORKSPACE, "-scheme", "Runner",
       "-configuration", "Release", "-archivePath", ARCHIVE_PATH, "archive",
-      "DEVELOPMENT_TEAM=DLQ4JM3YPQ",
+      "CODE_SIGN_STYLE=Manual",
       "CODE_SIGN_IDENTITY=Apple Distribution",
-      "CODE_SIGN_STYLE=Automatic"
+      "DEVELOPMENT_TEAM=#{TEAM_ID}",
+      "PROVISIONING_PROFILE=#{prov_uuid}"
     )
 
-    export_options_path = File.join(MACOS_DIR, "ExportOptions.plist")
-    UI.user_error!("Missing #{export_options_path}") unless File.exist?(export_options_path)
+    export_options_path = "/tmp/macos_ExportOptions.plist"
+    File.write(export_options_path, build_export_options(prov_uuid))
 
     sh(
       "xcodebuild", "-exportArchive",
       "-archivePath", ARCHIVE_PATH,
       "-exportOptionsPlist", export_options_path,
-      "-exportPath", EXPORT_DIR,
-      "-allowProvisioningUpdates"
+      "-exportPath", EXPORT_DIR
     )
 
     pkg_path = Dir.glob(File.join(EXPORT_DIR, "*.pkg")).first
     UI.user_error!("No .pkg found in #{EXPORT_DIR}") unless pkg_path
 
     upload_to_testflight(
-      api_key:                          api_key,
-      pkg:                              pkg_path,
+      api_key:                           api_key,
+      pkg:                               pkg_path,
       skip_waiting_for_build_processing: true,
-      skip_submission:                  true,
-      platform:                         "osx"
+      skip_submission:                   true,
+      platform:                          "osx"
     )
 
     UI.success("Uploaded macOS build #{build_number} to TestFlight!")
@@ -65,17 +93,19 @@ platform :mac do
   desc "Build and upload to App Store"
   lane :release do
     api_key = app_store_connect_api_key(
-      key_id:      ENV["ASC_KEY_ID"],
-      issuer_id:   ENV["ASC_ISSUER_ID"],
+      key_id:       ENV["ASC_KEY_ID"],
+      issuer_id:    ENV["ASC_ISSUER_ID"],
       key_filepath: ENV["ASC_KEY_PATH"]
     )
 
     build_number = latest_testflight_build_number(
       api_key:              api_key,
-      app_identifier:       "com.nextjedi.lifemathematics",
+      app_identifier:       BUNDLE_ID,
       platform:             "osx",
       initial_build_number: 0
     ) + 1
+
+    prov_uuid = ENV["APPLE_PROV_PROFILE_UUID"]
 
     Dir.chdir(PROJECT_ROOT) do
       sh("flutter", "clean")
@@ -86,33 +116,33 @@ platform :mac do
     sh(
       "xcodebuild", "-workspace", WORKSPACE, "-scheme", "Runner",
       "-configuration", "Release", "-archivePath", ARCHIVE_PATH, "archive",
-      "DEVELOPMENT_TEAM=DLQ4JM3YPQ",
+      "CODE_SIGN_STYLE=Manual",
       "CODE_SIGN_IDENTITY=Apple Distribution",
-      "CODE_SIGN_STYLE=Automatic"
+      "DEVELOPMENT_TEAM=#{TEAM_ID}",
+      "PROVISIONING_PROFILE=#{prov_uuid}"
     )
 
-    export_options_path = File.join(MACOS_DIR, "ExportOptions.plist")
-    UI.user_error!("Missing #{export_options_path}") unless File.exist?(export_options_path)
+    export_options_path = "/tmp/macos_ExportOptions.plist"
+    File.write(export_options_path, build_export_options(prov_uuid))
 
     sh(
       "xcodebuild", "-exportArchive",
       "-archivePath", ARCHIVE_PATH,
       "-exportOptionsPlist", export_options_path,
-      "-exportPath", EXPORT_DIR,
-      "-allowProvisioningUpdates"
+      "-exportPath", EXPORT_DIR
     )
 
     pkg_path = Dir.glob(File.join(EXPORT_DIR, "*.pkg")).first
     UI.user_error!("No .pkg found in #{EXPORT_DIR}") unless pkg_path
 
     deliver(
-      api_key:          api_key,
-      pkg:              pkg_path,
-      skip_metadata:    true,
-      skip_screenshots: true,
+      api_key:           api_key,
+      pkg:               pkg_path,
+      skip_metadata:     true,
+      skip_screenshots:  true,
       submit_for_review: false,
-      force:            true,
-      platform:         "osx"
+      force:             true,
+      platform:          "osx"
     )
 
     UI.success("Uploaded macOS build #{build_number} to App Store Connect!")
