@@ -121,3 +121,16 @@ Desktop.ini
 # Local configuration
 *.local.yaml
 local.properties
+
+# Android signing
+android/key.properties
+android/app/upload-keystore.jks
+*.jks
+*.keystore
+
+# Local Android SDK
+build-tools/
+platform-tools/
+platforms/
+licenses/
+.knownPackages
