@@ -63,7 +63,7 @@ stages:
       name: googlePlayKey
       displayName: 'Download Google Play key'
       inputs:
-        secureFile: 'google-play-api-key.json'
+        secureFile: 'playstore-deployment-478918-37cdbda51809.json'
     - script: bundle exec fastlane internal
       workingDirectory: '$(System.DefaultWorkingDirectory)/android'
       displayName: 'Fastlane: internal'
@@ -127,7 +127,7 @@ stages:
       name: googlePlayKey
       displayName: 'Download Google Play key'
       inputs:
-        secureFile: 'google-play-api-key.json'
+        secureFile: 'playstore-deployment-478918-37cdbda51809.json'
     - script: bundle exec fastlane production
       workingDirectory: '$(System.DefaultWorkingDirectory)/android'
       displayName: 'Fastlane: production'
