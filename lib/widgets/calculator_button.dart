@@ -16,12 +16,12 @@ class CalculatorButton extends StatelessWidget {
   final Color? customColor;
 
   const CalculatorButton({
-    Key? key,
+    super.key,
     required this.text,
     required this.onPressed,
     this.type = ButtonType.number,
     this.customColor,
-  }) : super(key: key);
+  });
 
   Color _getButtonColor(BuildContext context) {
     if (customColor != null) return customColor!;

@@ -28,9 +28,8 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
-      colorScheme: ColorScheme.light(
+      colorScheme: const ColorScheme.light(
         primary: _lightPrimary,
-        background: _lightBackground,
         surface: _lightSurface,
         onSurface: _lightOnSurface,
       ),
@@ -64,9 +63,8 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
-      colorScheme: ColorScheme.dark(
+      colorScheme: const ColorScheme.dark(
         primary: _darkPrimary,
-        background: _darkBackground,
         surface: _darkSurface,
         onSurface: _darkOnSurface,
       ),

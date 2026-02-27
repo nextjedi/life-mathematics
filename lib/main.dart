@@ -15,18 +15,17 @@ void main() async {
 class LifeMathematicsApp extends StatefulWidget {
   final bool isDarkMode;
 
-  const LifeMathematicsApp({Key? key, required this.isDarkMode})
-      : super(key: key);
+  const LifeMathematicsApp({super.key, required this.isDarkMode});
 
   @override
-  State<LifeMathematicsApp> createState() => _LifeMathematicsAppState();
+  State<LifeMathematicsApp> createState() => LifeMathematicsAppState();
 
-  static _LifeMathematicsAppState? of(BuildContext context) {
-    return context.findAncestorStateOfType<_LifeMathematicsAppState>();
+  static LifeMathematicsAppState? of(BuildContext context) {
+    return context.findAncestorStateOfType<LifeMathematicsAppState>();
   }
 }
 
-class _LifeMathematicsAppState extends State<LifeMathematicsApp> {
+class LifeMathematicsAppState extends State<LifeMathematicsApp> {
   late ThemeMode _themeMode;
 
   @override
