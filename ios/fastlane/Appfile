@@ -1,0 +1,4 @@
+app_identifier("com.nextjedi.lifemathematics")
+apple_id(ENV["APPLE_ID"] || "your-apple-id@example.com")
+team_id("DLQ4JM3YPQ")
+itc_team_id(ENV["ITC_TEAM_ID"])

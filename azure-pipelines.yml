@@ -1,0 +1,167 @@
+# Life Mathematics — Azure Pipelines
+#
+# Triggers:
+#   main branch  →  Stage: Beta     (Android internal + iOS/macOS TestFlight)
+#   v* tags      →  Stage: Production (Play Store + App Store)
+#   PRs to main  →  Stage: Test only
+#
+# Required Azure DevOps setup — see FASTLANE_SETUP.md → "Azure Pipelines Setup"
+
+trigger:
+  branches:
+    include:
+      - main
+  tags:
+    include:
+      - 'v*'
+
+pr:
+  branches:
+    include:
+      - main
+
+# ──────────────────────────────────────────────────────────────────
+# Stage 1 — Test (every push and PR)
+# ──────────────────────────────────────────────────────────────────
+stages:
+- stage: Test
+  displayName: 'Test & Analyze'
+  jobs:
+  - job: Flutter_Test
+    displayName: 'flutter test & analyze'
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - template: .azure/templates/flutter-install-steps.yml
+    - script: flutter analyze
+      displayName: 'flutter analyze'
+    - script: flutter test
+      displayName: 'flutter test'
+
+# ──────────────────────────────────────────────────────────────────
+# Stage 2 — Beta (main branch only)
+#   Android  → Play Store Internal Testing
+#   iOS      → TestFlight
+#   macOS    → TestFlight
+# All three jobs run in parallel.
+# ──────────────────────────────────────────────────────────────────
+- stage: Beta
+  displayName: 'Beta'
+  dependsOn: Test
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  jobs:
+
+  - job: Android_Internal
+    displayName: 'Android → Play Store Internal'
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - template: .azure/templates/flutter-install-steps.yml
+    - template: .azure/templates/android-signing-steps.yml
+    - template: .azure/templates/fastlane-install-steps.yml
+    - task: DownloadSecureFile@1
+      name: googlePlayKey
+      displayName: 'Download Google Play key'
+      inputs:
+        secureFile: 'google-play-api-key.json'
+    - script: bundle exec fastlane internal
+      workingDirectory: '$(System.DefaultWorkingDirectory)/android'
+      displayName: 'Fastlane: internal'
+      env:
+        GOOGLE_PLAY_JSON_KEY_PATH: $(googlePlayKey.secureFilePath)
+
+  - job: iOS_Beta
+    displayName: 'iOS → TestFlight'
+    pool:
+      vmImage: 'macos-latest'
+    steps:
+    - template: .azure/templates/flutter-install-steps.yml
+    - template: .azure/templates/apple-signing-steps.yml
+    - template: .azure/templates/fastlane-install-steps.yml
+    - script: bundle exec fastlane beta
+      workingDirectory: '$(System.DefaultWorkingDirectory)/ios'
+      displayName: 'Fastlane: beta'
+      env:
+        ASC_KEY_ID: $(ASC_KEY_ID)
+        ASC_ISSUER_ID: $(ASC_ISSUER_ID)
+        ASC_KEY_PATH: $(ascKey.secureFilePath)
+
+  - job: macOS_Beta
+    displayName: 'macOS → TestFlight'
+    pool:
+      vmImage: 'macos-latest'
+    steps:
+    - template: .azure/templates/flutter-install-steps.yml
+    - template: .azure/templates/apple-signing-steps.yml
+    - template: .azure/templates/fastlane-install-steps.yml
+    - script: bundle exec fastlane beta
+      workingDirectory: '$(System.DefaultWorkingDirectory)/macos'
+      displayName: 'Fastlane: beta'
+      env:
+        ASC_KEY_ID: $(ASC_KEY_ID)
+        ASC_ISSUER_ID: $(ASC_ISSUER_ID)
+        ASC_KEY_PATH: $(ascKey.secureFilePath)
+
+# ──────────────────────────────────────────────────────────────────
+# Stage 3 — Production (v* tags only)
+#   Android  → Play Store Production
+#   iOS      → App Store
+#   macOS    → App Store
+# All three jobs run in parallel.
+# ──────────────────────────────────────────────────────────────────
+- stage: Production
+  displayName: 'Production'
+  dependsOn: Test
+  condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
+  jobs:
+
+  - job: Android_Production
+    displayName: 'Android → Play Store Production'
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - template: .azure/templates/flutter-install-steps.yml
+    - template: .azure/templates/android-signing-steps.yml
+    - template: .azure/templates/fastlane-install-steps.yml
+    - task: DownloadSecureFile@1
+      name: googlePlayKey
+      displayName: 'Download Google Play key'
+      inputs:
+        secureFile: 'google-play-api-key.json'
+    - script: bundle exec fastlane production
+      workingDirectory: '$(System.DefaultWorkingDirectory)/android'
+      displayName: 'Fastlane: production'
+      env:
+        GOOGLE_PLAY_JSON_KEY_PATH: $(googlePlayKey.secureFilePath)
+
+  - job: iOS_Release
+    displayName: 'iOS → App Store'
+    pool:
+      vmImage: 'macos-latest'
+    steps:
+    - template: .azure/templates/flutter-install-steps.yml
+    - template: .azure/templates/apple-signing-steps.yml
+    - template: .azure/templates/fastlane-install-steps.yml
+    - script: bundle exec fastlane release
+      workingDirectory: '$(System.DefaultWorkingDirectory)/ios'
+      displayName: 'Fastlane: release'
+      env:
+        ASC_KEY_ID: $(ASC_KEY_ID)
+        ASC_ISSUER_ID: $(ASC_ISSUER_ID)
+        ASC_KEY_PATH: $(ascKey.secureFilePath)
+
+  - job: macOS_Release
+    displayName: 'macOS → App Store'
+    pool:
+      vmImage: 'macos-latest'
+    steps:
+    - template: .azure/templates/flutter-install-steps.yml
+    - template: .azure/templates/apple-signing-steps.yml
+    - template: .azure/templates/fastlane-install-steps.yml
+    - script: bundle exec fastlane release
+      workingDirectory: '$(System.DefaultWorkingDirectory)/macos'
+      displayName: 'Fastlane: release'
+      env:
+        ASC_KEY_ID: $(ASC_KEY_ID)
+        ASC_ISSUER_ID: $(ASC_ISSUER_ID)
+        ASC_KEY_PATH: $(ascKey.secureFilePath)

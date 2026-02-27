@@ -134,3 +134,22 @@ platform-tools/
 platforms/
 licenses/
 .knownPackages
+
+# Fastlane
+**/fastlane/report.xml
+**/fastlane/Preview.html
+**/fastlane/screenshots
+**/fastlane/test_output
+**/fastlane/README.md
+
+# Bundler
+vendor/bundle
+.bundle
+# Note: commit Gemfile.lock for reproducible CI builds
+
+# Google Play API key (never commit)
+google-play-api-key.json
+**/google-play-*.json
+
+# App Store Connect API key (never commit)
+AuthKey_*.p8

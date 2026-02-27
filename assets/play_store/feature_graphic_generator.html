@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Life Mathematics - Feature Graphic</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #1a1a1a;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .feature-graphic {
+            width: 1024px;
+            height: 500px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        /* Animated background elements */
+        .bg-element {
+            position: absolute;
+            border-radius: 50%;
+            opacity: 0.1;
+        }
+
+        .bg-element-1 {
+            width: 300px;
+            height: 300px;
+            background: white;
+            top: -100px;
+            right: -50px;
+        }
+
+        .bg-element-2 {
+            width: 200px;
+            height: 200px;
+            background: white;
+            bottom: -50px;
+            left: 100px;
+        }
+
+        /* Content container */
+        .content {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 60px;
+        }
+
+        /* Left side - Text */
+        .text-content {
+            flex: 1;
+            z-index: 2;
+        }
+
+        .app-name {
+            font-size: 56px;
+            font-weight: 800;
+            color: white;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 20px rgba(0,0,0,0.2);
+            letter-spacing: -1px;
+        }
+
+        .tagline {
+            font-size: 24px;
+            color: rgba(255, 255, 255, 0.95);
+            margin-bottom: 20px;
+            font-weight: 300;
+        }
+
+        .features {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 30px;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            color: white;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .feature-item::before {
+            content: '✓';
+            width: 24px;
+            height: 24px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            font-weight: bold;
+        }
+
+        /* Right side - Phone mockup */
+        .phone-mockup {
+            position: relative;
+            width: 280px;
+            height: 450px;
+            background: #1a1a1a;
+            border-radius: 35px;
+            padding: 12px;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.4);
+            z-index: 2;
+        }
+
+        .phone-screen {
+            width: 100%;
+            height: 100%;
+            background: #000;
+            border-radius: 25px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Calculator UI */
+        .calculator {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            background: #000;
+        }
+
+        .calc-display {
+            flex: 1;
+            background: #000;
+            padding: 30px 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: flex-end;
+        }
+
+        .calc-expression {
+            font-size: 18px;
+            color: #999;
+            margin-bottom: 10px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .calc-result {
+            font-size: 42px;
+            color: white;
+            font-weight: 300;
+            font-family: 'Courier New', monospace;
+        }
+
+        .calc-buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1px;
+            background: #000;
+            padding: 10px;
+        }
+
+        .calc-button {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            font-weight: 500;
+            border-radius: 50%;
+            margin: 2px;
+        }
+
+        .calc-button.number {
+            background: #333;
+            color: white;
+        }
+
+        .calc-button.operator {
+            background: #667eea;
+            color: white;
+        }
+
+        .calc-button.clear {
+            background: #666;
+            color: white;
+        }
+
+        .calc-button.equals {
+            background: #667eea;
+            color: white;
+            font-size: 28px;
+        }
+
+        /* Instructions */
+        .instructions {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+            background: rgba(0,0,0,0.3);
+            padding: 10px 15px;
+            border-radius: 8px;
+        }
+
+        .download-btn {
+            margin-top: 20px;
+            padding: 12px 30px;
+            background: white;
+            color: #667eea;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="feature-graphic" id="featureGraphic">
+        <div class="bg-element bg-element-1"></div>
+        <div class="bg-element bg-element-2"></div>
+
+        <div class="content">
+            <!-- Left side - Text -->
+            <div class="text-content">
+                <div class="app-name">Life Mathematics</div>
+                <div class="tagline">Your everyday calculator companion</div>
+
+                <div class="features">
+                    <div class="feature-item">Advanced calculations made simple</div>
+                    <div class="feature-item">Beautiful, modern interface</div>
+                    <div class="feature-item">Dark mode support</div>
+                    <div class="feature-item">Fast & reliable</div>
+                </div>
+            </div>
+
+            <!-- Right side - Phone mockup -->
+            <div class="phone-mockup">
+                <div class="phone-screen">
+                    <div class="calculator">
+                        <div class="calc-display">
+                            <div class="calc-expression">156 × 24</div>
+                            <div class="calc-result">3,744</div>
+                        </div>
+                        <div class="calc-buttons">
+                            <div class="calc-button clear">C</div>
+                            <div class="calc-button operator">÷</div>
+                            <div class="calc-button operator">×</div>
+                            <div class="calc-button operator">⌫</div>
+
+                            <div class="calc-button number">7</div>
+                            <div class="calc-button number">8</div>
+                            <div class="calc-button number">9</div>
+                            <div class="calc-button operator">-</div>
+
+                            <div class="calc-button number">4</div>
+                            <div class="calc-button number">5</div>
+                            <div class="calc-button number">6</div>
+                            <div class="calc-button operator">+</div>
+
+                            <div class="calc-button number">1</div>
+                            <div class="calc-button number">2</div>
+                            <div class="calc-button number">3</div>
+                            <div class="calc-button equals">=</div>
+
+                            <div class="calc-button number">0</div>
+                            <div class="calc-button number">.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="instructions">
+        <strong>To save as PNG:</strong>
+        <ol style="margin-top: 8px; margin-left: 20px;">
+            <li>Press F12 to open Developer Tools</li>
+            <li>Right-click on the graphic above</li>
+            <li>Select "Capture node screenshot"</li>
+            <li>Or use screenshot tool to capture exactly 1024×500px</li>
+        </ol>
+        <button class="download-btn" onclick="captureGraphic()">Download as PNG</button>
+    </div>
+
+    <script>
+        async function captureGraphic() {
+            alert('To create the PNG:\n\n1. Right-click on the graphic\n2. Select "Inspect" or press F12\n3. In DevTools, right-click the <div class="feature-graphic"> element\n4. Select "Capture node screenshot"\n\nOr use Windows Snipping Tool to capture the exact 1024×500px area.');
+        }
+    </script>
+</body>
+</html>
