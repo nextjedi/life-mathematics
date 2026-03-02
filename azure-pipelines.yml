@@ -97,6 +97,7 @@ stages:
     - template: .azure/templates/apple-signing-steps.yml
       parameters:
         provisioningProfile: 'macos-distribution.provisionprofile'
+        installerCertSecureFile: 'mac_installer.p12'
     - template: .azure/templates/fastlane-install-steps.yml
     - script: bundle exec fastlane beta
       workingDirectory: '$(System.DefaultWorkingDirectory)/macos'
@@ -165,6 +166,7 @@ stages:
     - template: .azure/templates/apple-signing-steps.yml
       parameters:
         provisioningProfile: 'macos-distribution.provisionprofile'
+        installerCertSecureFile: 'mac_installer.p12'
     - template: .azure/templates/fastlane-install-steps.yml
     - script: bundle exec fastlane release
       workingDirectory: '$(System.DefaultWorkingDirectory)/macos'
