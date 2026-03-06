@@ -64,7 +64,7 @@ platform :ios do
       "CODE_SIGN_STYLE=Manual",
       "CODE_SIGN_IDENTITY=Apple Distribution",
       "DEVELOPMENT_TEAM=#{TEAM_ID}",
-      "PROVISIONING_PROFILE=#{prov_uuid}"
+      "PROVISIONING_PROFILE_SPECIFIER=#{prov_uuid}"
     )
 
     export_options_path = "/tmp/ios_ExportOptions.plist"
@@ -118,7 +118,7 @@ platform :ios do
       "CODE_SIGN_STYLE=Manual",
       "CODE_SIGN_IDENTITY=Apple Distribution",
       "DEVELOPMENT_TEAM=#{TEAM_ID}",
-      "PROVISIONING_PROFILE=#{prov_uuid}"
+      "PROVISIONING_PROFILE_SPECIFIER=#{prov_uuid}"
     )
 
     export_options_path = "/tmp/ios_ExportOptions.plist"

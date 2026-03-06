@@ -13,9 +13,11 @@ class CalculatorScreen extends StatefulWidget {
 
 class _CalculatorScreenState extends State<CalculatorScreen> {
   final CalculatorLogic _calculator = CalculatorLogic();
+  bool _showFullDecimal = false;
 
   void _onButtonPressed(String value) {
     setState(() {
+      _showFullDecimal = false;
       switch (value) {
         case 'C':
           _calculator.clear();
@@ -82,19 +84,72 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
             Expanded(
               flex: 2,
               child: Container(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
                 alignment: Alignment.bottomRight,
-                child: SingleChildScrollView(
-                  reverse: true,
-                  scrollDirection: Axis.horizontal,
-                  child: Text(
-                    _calculator.displayValue,
-                    style: TextStyle(
-                      fontSize: 64,
-                      fontWeight: FontWeight.w300,
-                      color: Theme.of(context).colorScheme.onSurface,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    // Expression line
+                    if (_calculator.expression.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Text(
+                          _calculator.expression,
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w400,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withOpacity(0.5),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.right,
+                        ),
+                      ),
+                    // Main result row
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        // Expand/collapse button for long decimals
+                        if (_calculator.isResultTruncated)
+                          GestureDetector(
+                            onTap: () => setState(
+                                () => _showFullDecimal = !_showFullDecimal),
+                            child: Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: Icon(
+                                _showFullDecimal
+                                    ? Icons.unfold_less
+                                    : Icons.unfold_more,
+                                size: 22,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                          ),
+                        Expanded(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerRight,
+                            child: Text(
+                              _showFullDecimal
+                                  ? _calculator.fullResult
+                                  : _calculator.displayValue,
+                              style: TextStyle(
+                                fontSize: 64,
+                                fontWeight: FontWeight.w300,
+                                color:
+                                    Theme.of(context).colorScheme.onSurface,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
+                  ],
                 ),
               ),
             ),

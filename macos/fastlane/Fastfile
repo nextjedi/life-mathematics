@@ -54,7 +54,7 @@ platform :mac do
     Dir.chdir(PROJECT_ROOT) do
       sh("flutter", "clean")
       sh("flutter", "pub", "get")
-      sh("flutter", "build", "macos", "--release", "--build-number=#{build_number}")
+      sh("flutter", "build", "macos", "--release", "--no-codesign", "--build-number=#{build_number}")
     end
 
     sh(
@@ -63,7 +63,7 @@ platform :mac do
       "CODE_SIGN_STYLE=Manual",
       "CODE_SIGN_IDENTITY=Apple Distribution",
       "DEVELOPMENT_TEAM=#{TEAM_ID}",
-      "PROVISIONING_PROFILE=#{prov_uuid}"
+      "PROVISIONING_PROFILE_SPECIFIER=#{prov_uuid}"
     )
 
     export_options_path = "/tmp/macos_ExportOptions.plist"
@@ -110,7 +110,7 @@ platform :mac do
     Dir.chdir(PROJECT_ROOT) do
       sh("flutter", "clean")
       sh("flutter", "pub", "get")
-      sh("flutter", "build", "macos", "--release", "--build-number=#{build_number}")
+      sh("flutter", "build", "macos", "--release", "--no-codesign", "--build-number=#{build_number}")
     end
 
     sh(
@@ -119,7 +119,7 @@ platform :mac do
       "CODE_SIGN_STYLE=Manual",
       "CODE_SIGN_IDENTITY=Apple Distribution",
       "DEVELOPMENT_TEAM=#{TEAM_ID}",
-      "PROVISIONING_PROFILE=#{prov_uuid}"
+      "PROVISIONING_PROFILE_SPECIFIER=#{prov_uuid}"
     )
 
     export_options_path = "/tmp/macos_ExportOptions.plist"

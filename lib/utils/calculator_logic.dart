@@ -4,11 +4,32 @@ class CalculatorLogic {
   String _operator = '';
   bool _shouldResetDisplay = false;
   bool _hasDecimal = false;
+  String _lastExpression = '';
+  String _fullResult = '';
 
   String get displayValue => _displayValue;
+  String get fullResult => _fullResult;
+
+  bool get isResultTruncated =>
+      _fullResult.isNotEmpty && _fullResult != _displayValue;
+
+  /// Shows the running expression while typing, or the completed expression
+  /// after = is pressed.
+  String get expression {
+    if (_operator.isNotEmpty) {
+      if (_shouldResetDisplay) {
+        return '$_previousValue $_operator';
+      } else {
+        return '$_previousValue $_operator $_displayValue';
+      }
+    }
+    return _lastExpression;
+  }
 
   void inputNumber(String number) {
+    _fullResult = '';
     if (_shouldResetDisplay) {
+      _lastExpression = '';
       _displayValue = number;
       _shouldResetDisplay = false;
       _hasDecimal = false;
@@ -22,7 +43,9 @@ class CalculatorLogic {
   }
 
   void inputDecimal() {
+    _fullResult = '';
     if (_shouldResetDisplay) {
+      _lastExpression = '';
       _displayValue = '0.';
       _shouldResetDisplay = false;
       _hasDecimal = true;
@@ -36,6 +59,8 @@ class CalculatorLogic {
     if (_previousValue.isNotEmpty && !_shouldResetDisplay) {
       calculate();
     }
+    _lastExpression = '';
+    _fullResult = '';
     _previousValue = _displayValue;
     _operator = op;
     _shouldResetDisplay = true;
@@ -62,6 +87,7 @@ class CalculatorLogic {
       case '÷':
         if (current == 0) {
           _displayValue = 'Error';
+          _lastExpression = '';
           _clear();
           return;
         }
@@ -72,13 +98,20 @@ class CalculatorLogic {
         break;
     }
 
-    // Format result to remove unnecessary decimals
+    _lastExpression = '$_previousValue $_operator $_displayValue =';
+
     if (result == result.toInt()) {
       _displayValue = result.toInt().toString();
+      _fullResult = '';
     } else {
-      _displayValue = result.toStringAsFixed(8);
-      // Remove trailing zeros
-      _displayValue = _displayValue.replaceAll(RegExp(r'\.?0+$'), '');
+      // Full precision (up to 10 significant decimal places)
+      final fullStr =
+          result.toStringAsFixed(10).replaceAll(RegExp(r'\.?0+$'), '');
+      // Truncated to 4 decimal places
+      final truncated =
+          result.toStringAsFixed(4).replaceAll(RegExp(r'\.?0+$'), '');
+      _displayValue = truncated;
+      _fullResult = (fullStr != truncated) ? fullStr : '';
     }
 
     _previousValue = '';
@@ -93,6 +126,8 @@ class CalculatorLogic {
     _operator = '';
     _shouldResetDisplay = false;
     _hasDecimal = false;
+    _lastExpression = '';
+    _fullResult = '';
   }
 
   void _clear() {
@@ -105,9 +140,19 @@ class CalculatorLogic {
     _displayValue = '0';
     _shouldResetDisplay = false;
     _hasDecimal = false;
+    _fullResult = '';
   }
 
   void backspace() {
+    _fullResult = '';
+    _lastExpression = '';
+    // If an operator was just entered (no new digit yet), undo the operator
+    if (_shouldResetDisplay && _operator.isNotEmpty) {
+      _operator = '';
+      _shouldResetDisplay = false;
+      return;
+    }
+    _shouldResetDisplay = false;
     if (_displayValue.length > 1) {
       if (_displayValue[_displayValue.length - 1] == '.') {
         _hasDecimal = false;
