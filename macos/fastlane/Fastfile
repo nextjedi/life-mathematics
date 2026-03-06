@@ -54,7 +54,7 @@ platform :mac do
     Dir.chdir(PROJECT_ROOT) do
       sh("flutter", "clean")
       sh("flutter", "pub", "get")
-      sh("flutter", "build", "macos", "--release", "--no-codesign", "--build-number=#{build_number}")
+      sh("flutter", "build", "macos", "--release", "--build-number=#{build_number}")
     end
 
     sh(
@@ -110,7 +110,7 @@ platform :mac do
     Dir.chdir(PROJECT_ROOT) do
       sh("flutter", "clean")
       sh("flutter", "pub", "get")
-      sh("flutter", "build", "macos", "--release", "--no-codesign", "--build-number=#{build_number}")
+      sh("flutter", "build", "macos", "--release", "--build-number=#{build_number}")
     end
 
     sh(
