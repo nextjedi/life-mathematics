@@ -1,177 +1,63 @@
-# Life Mathematics — Azure Pipelines
+# azure-pipelines.yml
+# Copy this file to the ROOT of the life-mathematics repo as: azure-pipelines.yml
+# See ONBOARDING.md in nextjedi/apps-ops for full setup instructions.
 #
-# Triggers:
-#   main branch  →  Stage: Beta     (Android internal + iOS/macOS TestFlight)
-#   v* tags      →  Stage: Production (Play Store + App Store)
-#   PRs to main  →  Stage: Test only
+# Azure DevOps Library setup required before running:
 #
-# Required Azure DevOps setup — see FASTLANE_SETUP.md → "Azure Pipelines Setup"
+# Variable groups (Library → Variable groups):
+#   mobile-shared-signing   (Vsts)
+#     ASC_KEY_ID            Apple App Store Connect API key ID
+#     ASC_ISSUER_ID         Apple App Store Connect issuer ID
+#     APPLE_TEAM_ID         DLQ4JM3YPQ
+#
+#   mobile-shared-secrets   (Key Vault linked)
+#     ios-p12-password      Password for distribution.p12
+#
+#   app-life-mathematics    (Vsts)
+#     ANDROID_PACKAGE_NAME  com.nextjedi.lifemathematics
+#     IOS_BUNDLE_ID         com.nextjedi.lifemathematics
+#     KEY_ALIAS             lifemathematics
+#
+#   app-life-mathematics-secrets  (Key Vault linked)
+#     life-mathematics-keystore-password   Android keystore store password
+#     life-mathematics-key-password        Android keystore key password
+#
+# Secure files (Library → Secure files):
+#   upload-keystore.jks                              Android signing keystore (shared)
+#   distribution.p12                                 iOS distribution certificate
+#   ios-distribution.mobileprovision                 iOS App Store provisioning profile
+#   AuthKey_KFMUN9Z5NJ.p8                            Apple App Store Connect API key
+#   playstore-deployment-478918-37cdbda51809.json    Google service account key
+#
+# GitHub service connection:
+#   endpoint: GitHub-nextjedi   (must have access to nextjedi/life-mathematics)
+
+resources:
+  repositories:
+    - repository: devops-central
+      type: github
+      name: nextjedi/apps-ops
+      ref: refs/heads/master
+      endpoint: GitHub-nextjedi
 
 trigger:
   branches:
     include:
       - main
-  tags:
-    include:
-      - 'v*'
+  paths:
+    exclude:
+      - "*.md"
+      - docs/**
 
 pr:
   branches:
     include:
       - main
 
-# ──────────────────────────────────────────────────────────────────
-# Stage 1 — Test (every push and PR)
-# ──────────────────────────────────────────────────────────────────
-stages:
-- stage: Test
-  displayName: 'Test & Analyze'
-  jobs:
-  - job: Flutter_Test
-    displayName: 'flutter test & analyze'
-    pool:
-      vmImage: 'ubuntu-latest'
-    steps:
-    - template: .azure/templates/flutter-install-steps.yml
-    - script: flutter analyze
-      displayName: 'flutter analyze'
-    - script: flutter test
-      displayName: 'flutter test'
-
-# ──────────────────────────────────────────────────────────────────
-# Stage 2 — Beta (main branch only)
-#   Android  → Play Store Internal Testing
-#   iOS      → TestFlight
-#   macOS    → TestFlight
-# All three jobs run in parallel.
-# ──────────────────────────────────────────────────────────────────
-- stage: Beta
-  displayName: 'Beta'
-  dependsOn: Test
-  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
-  jobs:
-
-  - job: Android_Internal
-    displayName: 'Android → Play Store Internal'
-    pool:
-      vmImage: 'ubuntu-latest'
-    steps:
-    - template: .azure/templates/flutter-install-steps.yml
-    - template: .azure/templates/android-signing-steps.yml
-    - template: .azure/templates/fastlane-install-steps.yml
-    - task: DownloadSecureFile@1
-      name: googlePlayKey
-      displayName: 'Download Google Play key'
-      inputs:
-        secureFile: 'playstore-deployment-478918-37cdbda51809.json'
-    - script: bundle exec fastlane internal
-      workingDirectory: '$(System.DefaultWorkingDirectory)/android'
-      displayName: 'Fastlane: internal'
-      env:
-        GOOGLE_PLAY_JSON_KEY_PATH: $(googlePlayKey.secureFilePath)
-
-  - job: iOS_Beta
-    displayName: 'iOS → TestFlight'
-    pool:
-      vmImage: 'macos-latest'
-    steps:
-    - template: .azure/templates/flutter-install-steps.yml
-    - template: .azure/templates/apple-signing-steps.yml
-      parameters:
-        provisioningProfile: 'ios-distribution.mobileprovision'
-    - template: .azure/templates/fastlane-install-steps.yml
-    - script: bundle exec fastlane beta
-      workingDirectory: '$(System.DefaultWorkingDirectory)/ios'
-      displayName: 'Fastlane: beta'
-      env:
-        ASC_KEY_ID: $(ASC_KEY_ID)
-        ASC_ISSUER_ID: $(ASC_ISSUER_ID)
-        ASC_KEY_PATH: $(ascKey.secureFilePath)
-
-  - job: macOS_Beta
-    displayName: 'macOS → TestFlight'
-    pool:
-      vmImage: 'macos-latest'
-    steps:
-    - template: .azure/templates/flutter-install-steps.yml
-    - template: .azure/templates/apple-signing-steps.yml
-      parameters:
-        provisioningProfile: 'macos-distribution.provisionprofile'
-        installerCertSecureFile: 'mac_installer.p12'
-    - template: .azure/templates/fastlane-install-steps.yml
-    - script: bundle exec fastlane beta
-      workingDirectory: '$(System.DefaultWorkingDirectory)/macos'
-      displayName: 'Fastlane: beta'
-      env:
-        ASC_KEY_ID: $(ASC_KEY_ID)
-        ASC_ISSUER_ID: $(ASC_ISSUER_ID)
-        ASC_KEY_PATH: $(ascKey.secureFilePath)
-
-# ──────────────────────────────────────────────────────────────────
-# Stage 3 — Production (v* tags only)
-#   Android  → Play Store Production
-#   iOS      → App Store
-#   macOS    → App Store
-# All three jobs run in parallel.
-# ──────────────────────────────────────────────────────────────────
-- stage: Production
-  displayName: 'Production'
-  dependsOn: Test
-  condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
-  jobs:
-
-  - job: Android_Production
-    displayName: 'Android → Play Store Production'
-    pool:
-      vmImage: 'ubuntu-latest'
-    steps:
-    - template: .azure/templates/flutter-install-steps.yml
-    - template: .azure/templates/android-signing-steps.yml
-    - template: .azure/templates/fastlane-install-steps.yml
-    - task: DownloadSecureFile@1
-      name: googlePlayKey
-      displayName: 'Download Google Play key'
-      inputs:
-        secureFile: 'playstore-deployment-478918-37cdbda51809.json'
-    - script: bundle exec fastlane production
-      workingDirectory: '$(System.DefaultWorkingDirectory)/android'
-      displayName: 'Fastlane: production'
-      env:
-        GOOGLE_PLAY_JSON_KEY_PATH: $(googlePlayKey.secureFilePath)
-
-  - job: iOS_Release
-    displayName: 'iOS → App Store'
-    pool:
-      vmImage: 'macos-latest'
-    steps:
-    - template: .azure/templates/flutter-install-steps.yml
-    - template: .azure/templates/apple-signing-steps.yml
-      parameters:
-        provisioningProfile: 'ios-distribution.mobileprovision'
-    - template: .azure/templates/fastlane-install-steps.yml
-    - script: bundle exec fastlane release
-      workingDirectory: '$(System.DefaultWorkingDirectory)/ios'
-      displayName: 'Fastlane: release'
-      env:
-        ASC_KEY_ID: $(ASC_KEY_ID)
-        ASC_ISSUER_ID: $(ASC_ISSUER_ID)
-        ASC_KEY_PATH: $(ascKey.secureFilePath)
-
-  - job: macOS_Release
-    displayName: 'macOS → App Store'
-    pool:
-      vmImage: 'macos-latest'
-    steps:
-    - template: .azure/templates/flutter-install-steps.yml
-    - template: .azure/templates/apple-signing-steps.yml
-      parameters:
-        provisioningProfile: 'macos-distribution.provisionprofile'
-        installerCertSecureFile: 'mac_installer.p12'
-    - template: .azure/templates/fastlane-install-steps.yml
-    - script: bundle exec fastlane release
-      workingDirectory: '$(System.DefaultWorkingDirectory)/macos'
-      displayName: 'Fastlane: release'
-      env:
-        ASC_KEY_ID: $(ASC_KEY_ID)
-        ASC_ISSUER_ID: $(ASC_ISSUER_ID)
-        ASC_KEY_PATH: $(ascKey.secureFilePath)
+extends:
+  template: azure-pipelines/templates/flutter-deploy.yml@devops-central
+  parameters:
+    appVariableGroup: "app-life-mathematics"
+    provisioningProfile: "ios-distribution.mobileprovision"
+    keystorePasswordVar: "life-mathematics-keystore-password"
+    keyPasswordVar: "life-mathematics-key-password"
