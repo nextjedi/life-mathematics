@@ -58,6 +58,5 @@ extends:
   template: azure-pipelines/templates/flutter-deploy.yml@devops-central
   parameters:
     appVariableGroup: "app-life-mathematics"
-    provisioningProfile: "ios-distribution.mobileprovision"
     keystorePasswordVar: "life-mathematics-keystore-password"
     keyPasswordVar: "life-mathematics-key-password"
