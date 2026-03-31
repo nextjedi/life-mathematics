@@ -1,94 +1,121 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-enum ButtonType {
-  number,
-  operator,
-  equal,
-  clear,
-  function,
-}
+import '../app/theme.dart';
+
+enum ButtonType { number, operator, equal, clear, function }
 
 class CalculatorButton extends StatelessWidget {
   final String text;
   final VoidCallback onPressed;
   final ButtonType type;
-  final Color? customColor;
 
   const CalculatorButton({
     super.key,
     required this.text,
     required this.onPressed,
     this.type = ButtonType.number,
-    this.customColor,
   });
-
-  Color _getButtonColor(BuildContext context) {
-    if (customColor != null) return customColor!;
-
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    switch (type) {
-      case ButtonType.number:
-        return isDark
-            ? const Color(0xFF4A4458)
-            : const Color(0xFFE8DEF8);
-      case ButtonType.operator:
-        return isDark
-            ? const Color(0xFFD0BCFF)
-            : const Color(0xFF6750A4);
-      case ButtonType.equal:
-        return isDark
-            ? const Color(0xFFD0BCFF)
-            : const Color(0xFF6750A4);
-      case ButtonType.clear:
-        return isDark
-            ? const Color(0xFFFF5252)
-            : const Color(0xFFEF5350);
-      case ButtonType.function:
-        return isDark
-            ? const Color(0xFF625B71)
-            : const Color(0xFFCCC2DC);
-    }
-  }
-
-  Color _getTextColor(BuildContext context) {
-    if (type == ButtonType.operator || type == ButtonType.equal) {
-      return Theme.of(context).brightness == Brightness.dark
-          ? const Color(0xFF1C1B1F)
-          : Colors.white;
-    }
-    if (type == ButtonType.clear) {
-      return Colors.white;
-    }
-    return Theme.of(context).colorScheme.onSurface;
-  }
 
   @override
   Widget build(BuildContext context) {
+    if (type == ButtonType.equal) {
+      return _GradientButton(text: text, onPressed: onPressed);
+    }
+
+    final bg = _bgColor();
+    final fg = _fgColor();
+
     return Material(
-      color: _getButtonColor(context),
-      borderRadius: BorderRadius.circular(16),
+      color: bg,
+      borderRadius: BorderRadius.circular(999),
       child: InkWell(
         onTap: () {
           HapticFeedback.lightImpact();
           onPressed();
         },
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(999),
+        splashColor: AppTheme.primary.withValues(alpha: 0.15),
+        highlightColor: Colors.white.withValues(alpha: 0.05),
+        child: Center(
+          child: Text(
+            text,
+            style: GoogleFonts.spaceGrotesk(
+              fontSize: 22,
+              fontWeight: FontWeight.w500,
+              color: fg,
+            ),
           ),
-          child: Center(
-            child: Text(
-              text,
-              style: TextStyle(
-                fontSize: type == ButtonType.equal ? 32 : 24,
-                fontWeight: type == ButtonType.operator || type == ButtonType.equal
-                    ? FontWeight.bold
-                    : FontWeight.w500,
-                color: _getTextColor(context),
-              ),
+        ),
+      ),
+    );
+  }
+
+  Color _bgColor() {
+    switch (type) {
+      case ButtonType.number:
+        return AppTheme.btnNumber;
+      case ButtonType.operator:
+        return AppTheme.btnOperator;
+      case ButtonType.clear:
+        return AppTheme.btnClear;
+      case ButtonType.function:
+        return AppTheme.btnFunction;
+      case ButtonType.equal:
+        return AppTheme.primary; // fallback, never used
+    }
+  }
+
+  Color _fgColor() {
+    switch (type) {
+      case ButtonType.operator:
+        return AppTheme.primary;
+      case ButtonType.clear:
+        return AppTheme.error;
+      default:
+        return AppTheme.onSurface;
+    }
+  }
+}
+
+/// The = button with indigo→purple gradient
+class _GradientButton extends StatelessWidget {
+  final String text;
+  final VoidCallback onPressed;
+
+  const _GradientButton({required this.text, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.mediumImpact();
+        onPressed();
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(999),
+          gradient: const LinearGradient(
+            colors: [AppTheme.primary, AppTheme.primaryDim],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.primary.withValues(alpha: 0.3),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Center(
+          child: Text(
+            text,
+            style: GoogleFonts.spaceGrotesk(
+              fontSize: 28,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
             ),
           ),
         ),

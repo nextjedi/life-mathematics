@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
-import '../main.dart';
+import '../app/theme.dart';
+import '../providers/history_provider.dart';
 import '../utils/calculator_logic.dart';
+import '../utils/database_helper.dart';
 import '../widgets/calculator_button.dart';
 
 class CalculatorScreen extends StatefulWidget {
@@ -14,6 +19,30 @@ class CalculatorScreen extends StatefulWidget {
 class _CalculatorScreenState extends State<CalculatorScreen> {
   final CalculatorLogic _calculator = CalculatorLogic();
   bool _showFullDecimal = false;
+
+  void _saveCalculation() {
+    final prev = _calculator.previousValue;
+    final op = _calculator.currentOperator;
+    final current = _calculator.displayValue;
+    if (prev.isEmpty || op.isEmpty) return;
+
+    final now = DateTime.now();
+    final history = CalculationHistory(
+      type: 'basic_calculator',
+      name: 'Basic Calc ${DateFormat('MMM dd, HH:mm').format(now)}',
+      label: 'arithmetic',
+      isPinned: false,
+      timestamp: now,
+      inputs: {
+        'previousValue': prev,
+        'operator': op,
+        'currentValue': current,
+      },
+      results: {},
+    );
+
+    Provider.of<HistoryProvider>(context, listen: false).addHistory(history);
+  }
 
   void _onButtonPressed(String value) {
     setState(() {
@@ -35,6 +64,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
           _calculator.inputOperator(value);
           break;
         case '=':
+          _saveCalculation();
           _calculator.calculate();
           break;
         case '.':
@@ -56,304 +86,121 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final appState = LifeMathematicsApp.of(context);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Calculator',
-          style: TextStyle(fontWeight: FontWeight.w600),
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(
-              Theme.of(context).brightness == Brightness.dark
-                  ? Icons.light_mode
-                  : Icons.dark_mode,
-            ),
-            onPressed: () => appState?.toggleTheme(),
-            tooltip: 'Toggle Theme',
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Display
-            Expanded(
-              flex: 2,
-              child: Container(
-                padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
-                alignment: Alignment.bottomRight,
-                child: Column(
+    return Column(
+      children: [
+        // ── Display zone (#0e0e0e) ──────────────────────────────────────────
+        Expanded(
+          flex: 38,
+          child: Container(
+            color: AppTheme.background,
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.end,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                // Expression line
+                if (_calculator.expression.isNotEmpty)
+                  Text(
+                    _calculator.expression,
+                    style: GoogleFonts.manrope(
+                      fontSize: 18,
+                      color: AppTheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w400,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.right,
+                  ),
+                const SizedBox(height: 4),
+                // Main result
+                Row(
                   mainAxisAlignment: MainAxisAlignment.end,
-                  crossAxisAlignment: CrossAxisAlignment.end,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // Expression line
-                    if (_calculator.expression.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 4),
+                    if (_calculator.isResultTruncated)
+                      GestureDetector(
+                        onTap: () => setState(
+                            () => _showFullDecimal = !_showFullDecimal),
+                        child: Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: Icon(
+                            _showFullDecimal
+                                ? Icons.unfold_less
+                                : Icons.unfold_more,
+                            size: 22,
+                            color: AppTheme.primary,
+                          ),
+                        ),
+                      ),
+                    Expanded(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerRight,
                         child: Text(
-                          _calculator.expression,
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w400,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurface
-                                .withValues(alpha: 0.5),
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.right,
-                        ),
-                      ),
-                    // Main result row
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        // Expand/collapse button for long decimals
-                        if (_calculator.isResultTruncated)
-                          GestureDetector(
-                            onTap: () => setState(
-                                () => _showFullDecimal = !_showFullDecimal),
-                            child: Padding(
-                              padding: const EdgeInsets.only(right: 8),
-                              child: Icon(
-                                _showFullDecimal
-                                    ? Icons.unfold_less
-                                    : Icons.unfold_more,
-                                size: 22,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                            ),
-                          ),
-                        Expanded(
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            alignment: Alignment.centerRight,
-                            child: Text(
-                              _showFullDecimal
-                                  ? _calculator.fullResult
-                                  : _calculator.displayValue,
-                              style: TextStyle(
-                                fontSize: 64,
-                                fontWeight: FontWeight.w300,
-                                color:
-                                    Theme.of(context).colorScheme.onSurface,
-                              ),
-                            ),
+                          _showFullDecimal
+                              ? _calculator.fullResult
+                              : _calculator.displayValue,
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 72,
+                            fontWeight: FontWeight.w300,
+                            color: AppTheme.onSurface,
+                            letterSpacing: -1.5,
                           ),
                         ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            // Buttons
-            Expanded(
-              flex: 5,
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    // Row 1: C, CE, ⌫, ÷
-                    Expanded(
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: CalculatorButton(
-                              text: 'C',
-                              onPressed: () => _onButtonPressed('C'),
-                              type: ButtonType.clear,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: CalculatorButton(
-                              text: 'CE',
-                              onPressed: () => _onButtonPressed('CE'),
-                              type: ButtonType.function,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: CalculatorButton(
-                              text: '⌫',
-                              onPressed: () => _onButtonPressed('⌫'),
-                              type: ButtonType.function,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: CalculatorButton(
-                              text: '÷',
-                              onPressed: () => _onButtonPressed('÷'),
-                              type: ButtonType.operator,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Row 2: 7, 8, 9, ×
-                    Expanded(
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: CalculatorButton(
-                              text: '7',
-                              onPressed: () => _onButtonPressed('7'),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: CalculatorButton(
-                              text: '8',
-                              onPressed: () => _onButtonPressed('8'),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: CalculatorButton(
-                              text: '9',
-                              onPressed: () => _onButtonPressed('9'),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: CalculatorButton(
-                              text: '×',
-                              onPressed: () => _onButtonPressed('×'),
-                              type: ButtonType.operator,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Row 3: 4, 5, 6, −
-                    Expanded(
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: CalculatorButton(
-                              text: '4',
-                              onPressed: () => _onButtonPressed('4'),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: CalculatorButton(
-                              text: '5',
-                              onPressed: () => _onButtonPressed('5'),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: CalculatorButton(
-                              text: '6',
-                              onPressed: () => _onButtonPressed('6'),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: CalculatorButton(
-                              text: '−',
-                              onPressed: () => _onButtonPressed('−'),
-                              type: ButtonType.operator,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Row 4: 1, 2, 3, +
-                    Expanded(
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: CalculatorButton(
-                              text: '1',
-                              onPressed: () => _onButtonPressed('1'),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: CalculatorButton(
-                              text: '2',
-                              onPressed: () => _onButtonPressed('2'),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: CalculatorButton(
-                              text: '3',
-                              onPressed: () => _onButtonPressed('3'),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: CalculatorButton(
-                              text: '+',
-                              onPressed: () => _onButtonPressed('+'),
-                              type: ButtonType.operator,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Row 5: ±, 0, ., =
-                    Expanded(
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: CalculatorButton(
-                              text: '±',
-                              onPressed: () => _onButtonPressed('±'),
-                              type: ButtonType.function,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: CalculatorButton(
-                              text: '0',
-                              onPressed: () => _onButtonPressed('0'),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: CalculatorButton(
-                              text: '.',
-                              onPressed: () => _onButtonPressed('.'),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: CalculatorButton(
-                              text: '=',
-                              onPressed: () => _onButtonPressed('='),
-                              type: ButtonType.equal,
-                            ),
-                          ),
-                        ],
                       ),
                     ),
                   ],
                 ),
-              ),
+              ],
             ),
-          ],
+          ),
         ),
+
+        // ── Keypad zone (#131313) ───────────────────────────────────────────
+        Expanded(
+          flex: 62,
+          child: Container(
+            color: AppTheme.surfaceContainerLow,
+            padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+            child: Column(
+              children: [
+                _row(['C', 'CE', '⌫', '÷'],
+                    [ButtonType.clear, ButtonType.function, ButtonType.function, ButtonType.operator]),
+                const SizedBox(height: 10),
+                _row(['7', '8', '9', '×'],
+                    [ButtonType.number, ButtonType.number, ButtonType.number, ButtonType.operator]),
+                const SizedBox(height: 10),
+                _row(['4', '5', '6', '−'],
+                    [ButtonType.number, ButtonType.number, ButtonType.number, ButtonType.operator]),
+                const SizedBox(height: 10),
+                _row(['1', '2', '3', '+'],
+                    [ButtonType.number, ButtonType.number, ButtonType.number, ButtonType.operator]),
+                const SizedBox(height: 10),
+                _row(['±', '0', '.', '='],
+                    [ButtonType.function, ButtonType.number, ButtonType.number, ButtonType.equal]),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _row(List<String> labels, List<ButtonType> types) {
+    return Expanded(
+      child: Row(
+        children: List.generate(labels.length, (i) {
+          return Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(left: i == 0 ? 0 : 10),
+              child: CalculatorButton(
+                text: labels[i],
+                type: types[i],
+                onPressed: () => _onButtonPressed(labels[i]),
+              ),
+            ),
+          );
+        }),
       ),
     );
   }

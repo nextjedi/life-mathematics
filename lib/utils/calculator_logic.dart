@@ -9,6 +9,8 @@ class CalculatorLogic {
 
   String get displayValue => _displayValue;
   String get fullResult => _fullResult;
+  String get previousValue => _previousValue;
+  String get currentOperator => _operator;
 
   bool get isResultTruncated =>
       _fullResult.isNotEmpty && _fullResult != _displayValue;
