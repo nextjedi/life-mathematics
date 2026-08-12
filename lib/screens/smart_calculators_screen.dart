@@ -3,14 +3,19 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../app/theme.dart';
 import 'compound_interest_screen.dart';
+import 'emi_calculator_screen.dart';
+import 'investment_returns_screen.dart';
+import 'loan_calculator_screen.dart';
 
 class SmartCalculatorsScreen extends StatelessWidget {
   const SmartCalculatorsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -20,7 +25,7 @@ class SmartCalculatorsScreen extends StatelessWidget {
               'Choose a calculator',
               style: GoogleFonts.manrope(
                 fontSize: 13,
-                color: AppTheme.onSurfaceVariant,
+                color: palette.onSurfaceVariant,
                 letterSpacing: 0.5,
               ),
             ),
@@ -45,25 +50,40 @@ class SmartCalculatorsScreen extends StatelessWidget {
                 ),
               ),
               _CalcCard(
-                title: 'Loan\nCalculator',
-                subtitle: 'Plan your debt',
-                gradientColors: const [Color(0xFF2196F3), Color(0xFF0D47A1)],
+                title: 'Loan\nPayoff',
+                subtitle: 'Finish early',
+                gradientColors: LoanCalculatorScreen.accent,
                 icon: Icons.account_balance_outlined,
-                onTap: () => _comingSoon(context),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const LoanCalculatorScreen(),
+                  ),
+                ),
               ),
               _CalcCard(
                 title: 'EMI\nCalculator',
                 subtitle: 'Monthly payments',
-                gradientColors: const [Color(0xFFFF9800), Color(0xFFE65100)],
+                gradientColors: EmiCalculatorScreen.accent,
                 icon: Icons.payments_outlined,
-                onTap: () => _comingSoon(context),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const EmiCalculatorScreen(),
+                  ),
+                ),
               ),
               _CalcCard(
                 title: 'Investment\nReturns',
-                subtitle: 'Track your ROI',
-                gradientColors: const [Color(0xFF9C27B0), Color(0xFF4A148C)],
+                subtitle: 'SIP and ROI',
+                gradientColors: InvestmentReturnsScreen.accent,
                 icon: Icons.show_chart_rounded,
-                onTap: () => _comingSoon(context),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const InvestmentReturnsScreen(),
+                  ),
+                ),
               ),
             ],
           ),
@@ -72,19 +92,6 @@ class SmartCalculatorsScreen extends StatelessWidget {
     );
   }
 
-  void _comingSoon(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Coming soon!',
-          style: GoogleFonts.manrope(color: Colors.white),
-        ),
-        backgroundColor: AppTheme.surfaceContainerHighest,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
-  }
 }
 
 class _CalcCard extends StatelessWidget {
@@ -104,61 +111,70 @@ class _CalcCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          color: AppTheme.surfaceContainer,
+    final palette = context.palette;
+
+    return Semantics(
+      button: true,
+      label: title.replaceAll('\n', ' '),
+      child: Material(
+        color: palette.surfaceContainer,
+        borderRadius: BorderRadius.circular(24),
+        child: InkWell(
+          onTap: onTap,
           borderRadius: BorderRadius.circular(24),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Gradient icon circle
-            Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: gradientColors,
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: Colors.white, size: 26),
-            ),
-            const Spacer(),
-            Text(
-              title,
-              style: GoogleFonts.spaceGrotesk(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.onSurface,
-                height: 1.2,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Row(
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Text(
-                    subtitle,
-                    style: GoogleFonts.manrope(
-                      fontSize: 11,
-                      color: AppTheme.onSurfaceVariant,
+                // Gradient icon circle
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: gradientColors,
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, color: Colors.white, size: 26),
+                ),
+                const Spacer(),
+                Text(
+                  title,
+                  style: GoogleFonts.spaceGrotesk(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: palette.onSurface,
+                    height: 1.2,
                   ),
                 ),
-                const Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  size: 12,
-                  color: AppTheme.onSurfaceVariant,
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        subtitle,
+                        style: GoogleFonts.manrope(
+                          fontSize: 11,
+                          color: palette.onSurfaceVariant,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 12,
+                      color: palette.onSurfaceVariant,
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
+          ),
         ),
       ),
     );

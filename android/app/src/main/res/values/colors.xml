@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Matches AppPalette.dark.background (#0E0E0E). The app ships dark by
+         default, so the launch window uses it in both OS modes rather than
+         flashing white before the first Flutter frame. -->
+    <color name="launch_background">#FF0E0E0E</color>
+</resources>

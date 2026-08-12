@@ -24,6 +24,9 @@ class _CompoundInterestScreenState extends State<CompoundInterestScreen> {
   final _rateController = TextEditingController();
   final _yearsController = TextEditingController();
 
+  final _scrollController = ScrollController();
+  final _resultKey = GlobalKey();
+
   int _compoundingFrequency = 12;
   _CompoundResult? _result;
 
@@ -42,10 +45,12 @@ class _CompoundInterestScreenState extends State<CompoundInterestScreen> {
     _principalController.dispose();
     _rateController.dispose();
     _yearsController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
   void _calculate() {
+    FocusScope.of(context).unfocus();
     if (!_formKey.currentState!.validate()) return;
 
     final p = double.parse(_principalController.text.replaceAll(',', ''));
@@ -82,8 +87,24 @@ class _CompoundInterestScreenState extends State<CompoundInterestScreen> {
       );
     });
 
-    _saveToHistory(p, r * 100, _compoundingFrequency, t, finalAmount,
-        interestEarned);
+    _saveToHistory(
+        p, r * 100, _compoundingFrequency, t, finalAmount, interestEarned);
+    _revealResult();
+  }
+
+  /// The answer renders below the fold, so tapping Calculate used to look like
+  /// nothing happened. Bring it into view once the card has been laid out.
+  void _revealResult() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final ctx = _resultKey.currentContext;
+      if (ctx == null || !mounted) return;
+      Scrollable.ensureVisible(
+        ctx,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeOutCubic,
+        alignment: 0.05,
+      );
+    });
   }
 
   void _saveToHistory(double principal, double rate, int freq, double years,
@@ -91,7 +112,7 @@ class _CompoundInterestScreenState extends State<CompoundInterestScreen> {
     final now = DateTime.now();
     final history = CalculationHistory(
       type: 'compound_interest',
-      name: 'Compound Interest ${DateFormat('MMM dd, HH:mm').format(now)}',
+      name: 'Compound Interest',
       label: 'finance',
       isPinned: false,
       timestamp: now,
@@ -106,18 +127,20 @@ class _CompoundInterestScreenState extends State<CompoundInterestScreen> {
         'interestEarned': _currencyFormat.format(interestEarned),
       },
     );
-    Provider.of<HistoryProvider>(context, listen: false).addHistory(history);
+    context.read<HistoryProvider>().addHistory(history);
   }
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
+
     return Scaffold(
-      backgroundColor: AppTheme.background,
+      backgroundColor: palette.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded,
-              color: AppTheme.onSurface, size: 20),
+          icon: Icon(Icons.arrow_back_ios_new_rounded,
+              color: palette.onSurface, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
         centerTitle: true,
@@ -126,11 +149,12 @@ class _CompoundInterestScreenState extends State<CompoundInterestScreen> {
           style: GoogleFonts.spaceGrotesk(
             fontSize: 18,
             fontWeight: FontWeight.w600,
-            color: AppTheme.onSurface,
+            color: palette.onSurface,
           ),
         ),
       ),
       body: SingleChildScrollView(
+        controller: _scrollController,
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
         child: Form(
           key: _formKey,
@@ -162,7 +186,7 @@ class _CompoundInterestScreenState extends State<CompoundInterestScreen> {
                       style: GoogleFonts.spaceGrotesk(
                         fontSize: 20,
                         fontWeight: FontWeight.w600,
-                        color: AppTheme.onSurface,
+                        color: palette.onSurface,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -170,7 +194,7 @@ class _CompoundInterestScreenState extends State<CompoundInterestScreen> {
                       'A = P(1 + r/n)ⁿᵗ',
                       style: GoogleFonts.spaceGrotesk(
                         fontSize: 13,
-                        color: AppTheme.onSurfaceVariant,
+                        color: palette.onSurfaceVariant,
                         letterSpacing: 0.5,
                       ),
                     ),
@@ -183,7 +207,7 @@ class _CompoundInterestScreenState extends State<CompoundInterestScreen> {
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: AppTheme.surfaceContainerLow,
+                  color: palette.surfaceContainerLow,
                   borderRadius: BorderRadius.circular(24),
                 ),
                 child: Column(
@@ -193,6 +217,7 @@ class _CompoundInterestScreenState extends State<CompoundInterestScreen> {
                       label: 'Principal Amount',
                       hint: '10,000',
                       prefix: '₹',
+                      textInputAction: TextInputAction.next,
                     ),
                     const SizedBox(height: 16),
                     _buildField(
@@ -201,6 +226,7 @@ class _CompoundInterestScreenState extends State<CompoundInterestScreen> {
                       hint: '8.0',
                       suffix: '%',
                       allowDecimal: true,
+                      textInputAction: TextInputAction.next,
                     ),
                     const SizedBox(height: 16),
                     _FrequencySelector(
@@ -216,6 +242,8 @@ class _CompoundInterestScreenState extends State<CompoundInterestScreen> {
                       hint: '5',
                       suffix: 'yrs',
                       allowDecimal: true,
+                      textInputAction: TextInputAction.done,
+                      onSubmitted: (_) => _calculate(),
                     ),
                   ],
                 ),
@@ -223,32 +251,36 @@ class _CompoundInterestScreenState extends State<CompoundInterestScreen> {
               const SizedBox(height: 16),
 
               // ── Calculate button ──────────────────────────────────────────
-              GestureDetector(
-                onTap: _calculate,
-                child: Container(
-                  height: 56,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF00C853), Color(0xFF069E46)],
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                    ),
-                    borderRadius: BorderRadius.circular(999),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF00C853).withValues(alpha: 0.3),
-                        blurRadius: 16,
-                        offset: const Offset(0, 4),
+              Semantics(
+                button: true,
+                label: 'Calculate compound interest',
+                child: GestureDetector(
+                  onTap: _calculate,
+                  child: Container(
+                    height: 56,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF00C853), Color(0xFF069E46)],
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
                       ),
-                    ],
-                  ),
-                  child: Center(
-                    child: Text(
-                      'Calculate  →',
-                      style: GoogleFonts.spaceGrotesk(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
+                      borderRadius: BorderRadius.circular(999),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF00C853).withValues(alpha: 0.3),
+                          blurRadius: 16,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: Text(
+                        'Calculate  →',
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ),
@@ -259,11 +291,15 @@ class _CompoundInterestScreenState extends State<CompoundInterestScreen> {
               if (_result != null) ...[
                 const SizedBox(height: 20),
                 _ResultCard(
-                    result: _result!, currencyFormat: _currencyFormat),
+                  key: _resultKey,
+                  result: _result!,
+                  currencyFormat: _currencyFormat,
+                ),
                 const SizedBox(height: 12),
                 _BreakdownCard(
-                    breakdown: _result!.breakdown,
-                    currencyFormat: _currencyFormat),
+                  breakdown: _result!.breakdown,
+                  currencyFormat: _currencyFormat,
+                ),
               ],
             ],
           ),
@@ -279,26 +315,29 @@ class _CompoundInterestScreenState extends State<CompoundInterestScreen> {
     String? prefix,
     String? suffix,
     bool allowDecimal = false,
+    TextInputAction textInputAction = TextInputAction.next,
+    ValueChanged<String>? onSubmitted,
   }) {
+    final palette = context.palette;
     return TextFormField(
       controller: controller,
-      keyboardType:
-          TextInputType.numberWithOptions(decimal: allowDecimal),
+      keyboardType: TextInputType.numberWithOptions(decimal: allowDecimal),
+      textInputAction: textInputAction,
+      onFieldSubmitted: onSubmitted,
       inputFormatters: [
         FilteringTextInputFormatter.allow(
             RegExp(allowDecimal ? r'[\d.]' : r'\d')),
       ],
-      style: GoogleFonts.spaceGrotesk(
-          color: AppTheme.onSurface, fontSize: 15),
+      style: GoogleFonts.spaceGrotesk(color: palette.onSurface, fontSize: 15),
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
         prefixText: prefix != null ? '$prefix  ' : null,
         suffixText: suffix,
-        prefixStyle: GoogleFonts.manrope(
-            color: AppTheme.onSurfaceVariant, fontSize: 15),
-        suffixStyle: GoogleFonts.manrope(
-            color: AppTheme.onSurfaceVariant, fontSize: 13),
+        prefixStyle:
+            GoogleFonts.manrope(color: palette.onSurfaceVariant, fontSize: 15),
+        suffixStyle:
+            GoogleFonts.manrope(color: palette.onSurfaceVariant, fontSize: 13),
       ),
       validator: (v) {
         if (v == null || v.isEmpty) return 'Required';
@@ -324,51 +363,58 @@ class _FrequencySelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Compounding',
-          style: GoogleFonts.manrope(
-              fontSize: 12, color: AppTheme.onSurfaceVariant),
+          style:
+              GoogleFonts.manrope(fontSize: 12, color: palette.onSurfaceVariant),
         ),
         const SizedBox(height: 8),
         Container(
           padding: const EdgeInsets.all(4),
           decoration: BoxDecoration(
-            color: AppTheme.surfaceContainerHigh,
+            color: palette.surfaceContainerHigh,
             borderRadius: BorderRadius.circular(999),
           ),
           child: Row(
             children: frequencies.map((f) {
               final isActive = f.value == selected;
               return Expanded(
-                child: GestureDetector(
-                  onTap: () => onChanged(f.value),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    decoration: BoxDecoration(
-                      gradient: isActive
-                          ? const LinearGradient(
-                              colors: [AppTheme.primary, AppTheme.primaryDim],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            )
-                          : null,
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Center(
-                      child: Text(
-                        f.label,
-                        style: GoogleFonts.manrope(
-                          fontSize: 11,
-                          fontWeight: isActive
-                              ? FontWeight.w700
-                              : FontWeight.w400,
-                          color: isActive
-                              ? Colors.white
-                              : AppTheme.onSurfaceVariant,
+                child: Semantics(
+                  button: true,
+                  selected: isActive,
+                  child: GestureDetector(
+                    onTap: () => onChanged(f.value),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      decoration: BoxDecoration(
+                        gradient: isActive
+                            ? LinearGradient(
+                                colors: [palette.primary, palette.primaryDim],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              )
+                            : null,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Center(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            f.label,
+                            style: GoogleFonts.manrope(
+                              fontSize: 11,
+                              fontWeight:
+                                  isActive ? FontWeight.w700 : FontWeight.w400,
+                              color: isActive
+                                  ? Colors.white
+                                  : palette.onSurfaceVariant,
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -418,20 +464,28 @@ class _ResultCard extends StatelessWidget {
   final _CompoundResult result;
   final NumberFormat currencyFormat;
 
-  const _ResultCard({required this.result, required this.currencyFormat});
+  const _ResultCard({
+    super.key,
+    required this.result,
+    required this.currencyFormat,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final interestPercent =
         (result.interestEarned / result.principal * 100).toStringAsFixed(1);
 
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF13121F),
+        color: isDark
+            ? const Color(0xFF13121F)
+            : palette.primary.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: AppTheme.primary.withValues(alpha: 0.12),
+          color: palette.primary.withValues(alpha: 0.12),
           width: 1,
         ),
       ),
@@ -441,39 +495,50 @@ class _ResultCard extends StatelessWidget {
           Text(
             'Final Amount',
             style: GoogleFonts.manrope(
-                fontSize: 12, color: AppTheme.onSurfaceVariant),
+                fontSize: 12, color: palette.onSurfaceVariant),
           ),
           const SizedBox(height: 4),
-          Text(
-            '₹ ${currencyFormat.format(result.finalAmount)}',
-            style: GoogleFonts.spaceGrotesk(
-              fontSize: 32,
-              fontWeight: FontWeight.w700,
-              color: AppTheme.primary,
-              letterSpacing: -0.5,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              '₹ ${currencyFormat.format(result.finalAmount)}',
+              style: GoogleFonts.spaceGrotesk(
+                fontSize: 32,
+                fontWeight: FontWeight.w700,
+                color: palette.primary,
+                letterSpacing: -0.5,
+              ),
             ),
           ),
           const SizedBox(height: 16),
-          Row(
-            children: [
-              _Chip(
+          // Equal-height chips without forcing an infinite height inside the
+          // scroll view (CrossAxisAlignment.stretch does exactly that).
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _Chip(
                   label: 'Principal',
                   value: '₹ ${currencyFormat.format(result.principal)}',
-                  color: AppTheme.onSurfaceVariant),
-              const SizedBox(width: 8),
-              _Chip(
+                  color: palette.onSurfaceVariant,
+                ),
+                const SizedBox(width: 8),
+                _Chip(
                   label: 'Interest',
                   value:
                       '₹ ${currencyFormat.format(result.interestEarned)} (+$interestPercent%)',
-                  color: AppTheme.green),
-            ],
+                  color: palette.green,
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 12),
           Center(
             child: Text(
               'Effective Annual Rate: ${result.effectiveAnnualRate.toStringAsFixed(2)}%',
               style: GoogleFonts.manrope(
-                  fontSize: 12, color: AppTheme.onSurfaceVariant),
+                  fontSize: 12, color: palette.onSurfaceVariant),
             ),
           ),
         ],
@@ -487,30 +552,35 @@ class _Chip extends StatelessWidget {
   final String value;
   final Color color;
 
-  const _Chip(
-      {required this.label, required this.value, required this.color});
+  const _Chip({required this.label, required this.value, required this.color});
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: AppTheme.surfaceContainerHigh,
+          color: palette.surfaceContainerHigh,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Text(label,
                 style: GoogleFonts.manrope(
-                    fontSize: 10, color: AppTheme.onSurfaceVariant)),
+                    fontSize: 10, color: palette.onSurfaceVariant)),
             const SizedBox(height: 2),
-            Text(value,
-                style: GoogleFonts.spaceGrotesk(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: color)),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(value,
+                  style: GoogleFonts.spaceGrotesk(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: color)),
+            ),
           ],
         ),
       ),
@@ -528,10 +598,11 @@ class _BreakdownCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppTheme.surfaceContainer,
+        color: palette.surfaceContainer,
         borderRadius: BorderRadius.circular(24),
       ),
       child: Column(
@@ -542,16 +613,16 @@ class _BreakdownCard extends StatelessWidget {
             style: GoogleFonts.spaceGrotesk(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: AppTheme.onSurface,
+              color: palette.onSurface,
             ),
           ),
           const SizedBox(height: 16),
           // Header
           Row(
             children: [
-              _cell('Year', flex: 1, isHeader: true),
-              _cell('Balance', flex: 2, isHeader: true),
-              _cell('Interest', flex: 2, isHeader: true),
+              _cell(context, 'Year', flex: 1, isHeader: true),
+              _cell(context, 'Balance', flex: 2, isHeader: true),
+              _cell(context, 'Interest', flex: 2, isHeader: true),
             ],
           ),
           const SizedBox(height: 8),
@@ -559,15 +630,14 @@ class _BreakdownCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 6),
                 child: Row(
                   children: [
-                    _cell(
+                    _cell(context,
                         row.isPartial ? '${row.year}*' : '${row.year}',
                         flex: 1),
-                    _cell('₹ ${currencyFormat.format(row.balance)}',
+                    _cell(context, '₹ ${currencyFormat.format(row.balance)}',
                         flex: 2),
-                    _cell(
+                    _cell(context,
                         '₹ ${currencyFormat.format(row.interestThisYear)}',
-                        flex: 2,
-                        color: AppTheme.green),
+                        flex: 2, color: palette.green),
                   ],
                 ),
               )),
@@ -577,7 +647,7 @@ class _BreakdownCard extends StatelessWidget {
               child: Text(
                 '* Partial year',
                 style: GoogleFonts.manrope(
-                    fontSize: 11, color: AppTheme.onSurfaceVariant),
+                    fontSize: 11, color: palette.onSurfaceVariant),
               ),
             ),
         ],
@@ -585,18 +655,22 @@ class _BreakdownCard extends StatelessWidget {
     );
   }
 
-  Widget _cell(String text,
+  Widget _cell(BuildContext context, String text,
       {required int flex, bool isHeader = false, Color? color}) {
+    final palette = context.palette;
     return Expanded(
       flex: flex,
-      child: Text(
-        text,
-        style: GoogleFonts.spaceGrotesk(
-          fontSize: isHeader ? 12 : 13,
-          fontWeight:
-              isHeader ? FontWeight.w700 : FontWeight.w400,
-          color: color ??
-              (isHeader ? AppTheme.onSurfaceVariant : AppTheme.onSurface),
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.centerLeft,
+        child: Text(
+          text,
+          style: GoogleFonts.spaceGrotesk(
+            fontSize: isHeader ? 12 : 13,
+            fontWeight: isHeader ? FontWeight.w700 : FontWeight.w400,
+            color: color ??
+                (isHeader ? palette.onSurfaceVariant : palette.onSurface),
+          ),
         ),
       ),
     );
