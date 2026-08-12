@@ -11,40 +11,61 @@ class CalculatorButton extends StatelessWidget {
   final VoidCallback onPressed;
   final ButtonType type;
 
+  /// Spoken label, when the glyph alone would not read well.
+  final String? semanticLabel;
+
   const CalculatorButton({
     super.key,
     required this.text,
     required this.onPressed,
     this.type = ButtonType.number,
+    this.semanticLabel,
   });
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
+
     if (type == ButtonType.equal) {
-      return _GradientButton(text: text, onPressed: onPressed);
+      return _GradientButton(
+        text: text,
+        onPressed: onPressed,
+        semanticLabel: semanticLabel,
+      );
     }
 
-    final bg = _bgColor();
-    final fg = _fgColor();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Material(
-      color: bg,
-      borderRadius: BorderRadius.circular(999),
-      child: InkWell(
-        onTap: () {
-          HapticFeedback.lightImpact();
-          onPressed();
-        },
+    return Semantics(
+      button: true,
+      label: semanticLabel ?? text,
+      excludeSemantics: true,
+      child: Material(
+        color: _bgColor(palette),
         borderRadius: BorderRadius.circular(999),
-        splashColor: AppTheme.primary.withValues(alpha: 0.15),
-        highlightColor: Colors.white.withValues(alpha: 0.05),
-        child: Center(
-          child: Text(
-            text,
-            style: GoogleFonts.spaceGrotesk(
-              fontSize: 22,
-              fontWeight: FontWeight.w500,
-              color: fg,
+        child: InkWell(
+          onTap: () {
+            HapticFeedback.lightImpact();
+            onPressed();
+          },
+          borderRadius: BorderRadius.circular(999),
+          splashColor: palette.primary.withValues(alpha: 0.15),
+          highlightColor: (isDark ? Colors.white : Colors.black)
+              .withValues(alpha: 0.05),
+          child: Center(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                child: Text(
+                  text,
+                  style: GoogleFonts.spaceGrotesk(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w500,
+                    color: _fgColor(palette),
+                  ),
+                ),
+              ),
             ),
           ),
         ),
@@ -52,29 +73,29 @@ class CalculatorButton extends StatelessWidget {
     );
   }
 
-  Color _bgColor() {
+  Color _bgColor(AppPalette palette) {
     switch (type) {
       case ButtonType.number:
-        return AppTheme.btnNumber;
+        return palette.btnNumber;
       case ButtonType.operator:
-        return AppTheme.btnOperator;
+        return palette.btnOperator;
       case ButtonType.clear:
-        return AppTheme.btnClear;
+        return palette.btnClear;
       case ButtonType.function:
-        return AppTheme.btnFunction;
+        return palette.btnFunction;
       case ButtonType.equal:
-        return AppTheme.primary; // fallback, never used
+        return palette.primary; // fallback, never used
     }
   }
 
-  Color _fgColor() {
+  Color _fgColor(AppPalette palette) {
     switch (type) {
       case ButtonType.operator:
-        return AppTheme.primary;
+        return palette.primary;
       case ButtonType.clear:
-        return AppTheme.error;
+        return palette.error;
       default:
-        return AppTheme.onSurface;
+        return palette.onSurface;
     }
   }
 }
@@ -83,39 +104,50 @@ class CalculatorButton extends StatelessWidget {
 class _GradientButton extends StatelessWidget {
   final String text;
   final VoidCallback onPressed;
+  final String? semanticLabel;
 
-  const _GradientButton({required this.text, required this.onPressed});
+  const _GradientButton({
+    required this.text,
+    required this.onPressed,
+    this.semanticLabel,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.mediumImpact();
-        onPressed();
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(999),
-          gradient: const LinearGradient(
-            colors: [AppTheme.primary, AppTheme.primaryDim],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: AppTheme.primary.withValues(alpha: 0.3),
-              blurRadius: 16,
-              offset: const Offset(0, 4),
+    final palette = context.palette;
+    return Semantics(
+      button: true,
+      label: semanticLabel ?? text,
+      excludeSemantics: true,
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedback.mediumImpact();
+          onPressed();
+        },
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(999),
+            gradient: LinearGradient(
+              colors: [palette.primary, palette.primaryDim],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
-          ],
-        ),
-        child: Center(
-          child: Text(
-            text,
-            style: GoogleFonts.spaceGrotesk(
-              fontSize: 28,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: palette.primary.withValues(alpha: 0.3),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Center(
+            child: Text(
+              text,
+              style: GoogleFonts.spaceGrotesk(
+                fontSize: 28,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
             ),
           ),
         ),
